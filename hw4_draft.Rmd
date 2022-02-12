@@ -107,21 +107,7 @@ library(epiDisplay)
 ```{r q1a}
 
 warming <- as.factor(c(rep('yes', 650), rep('no',350)))
-df <- data.frame(warming)
-tab1(df$warming, graph=FALSE, cum.percent = FALSE)
-
-df %>% ggplot(aes(x=warming))+
-    geom_bar(fill = "steelblue", colour = "black") +
-    ylim(0, 800) +
-    labs(x = "Belief",
-         y = "Number of People",
-         title = "Belief that global Warming is caused by people") +
-    theme_bw() +
-    theme(axis.title.y = element_text(size = rel(1.2)),
-          axis.title.x = element_text(size = rel(1.2)),
-          axis.text.x = element_text(size = rel(1.4)),
-          axis.text.y = element_text(size = rel(1.4)),
-          plot.title = element_text(hjust=0.5, size = rel(1.5)))
+tab1(warming, graph=TRUE, cum.percent = FALSE, col="steelblue")
 ```
 
 
@@ -219,4 +205,91 @@ depend on the values of n and p?
 # coverage.ci(1000,.9,"score",0.95)
 ```
 
+
+3. Offspring of certain fruit flies may have either yellow or black bodies and either normal or short wings. Genetic theory predicts that these traits will appear with the following probabilities: Yellow, Normal Yellow, Short Black, Normal Black, Short 9/16 3/16 3/16 1/16 A researcher examines 200 flies and identifies the traits for each fly. These data can be found in the file flies.csv.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cccc}
+Yellow, Normal & Yellow, Short & Black, Normal & Black, Short \\
+\hline
+9/16 &  3/16  & 3/16 & 1/16 \\ 
+\hline
+
+\end{tabular}
+\end{table}
+
+(a) Use R to give the summary table and a bar graph of the sample data.
+
+
+```{r }
+flies <- read_csv("flies.csv", col_names = TRUE, show_col_types = FALSE)
+flies$Traits <- factor(flies$Traits, levels = c("Yellow, Normal", "Yellow, Short", "Black, Normal", "Black, Short"))
+
+
+tab1(flies$Traits, cum.percent = FALSE, sort.group = "decreasing", main="Distribution of Traits", col="steelblue")
+
+```
+
+
+
+
+(b) Give the null and alternative hypotheses for the goodness of fit test for the correctness of the genetic theory.
+
+
+$H_0: p_{yn} = p_{ys} = p_{bn} = p_{bs}$ \newline
+$H_1: \text{At least one of the probabilities in the null hyptothesis is different}$
+
+
+
+
+(c) Calculate the expected number of fruit flies from the ”Yellow, Normal” category under the assumption the genetic theory is true. Only calculate this expected value here, and show your work. You may use R to verify your answer.
+
+$E(Y_{Yellow,Normal})=n*p_{Yellow,Normal}=200*\frac{9}{16}=112.5$
+
+```{r}
+200*9/16
+```
+
+
+
+
+
+(d) Calculate the contribution of the ”Yellow, Normal” category to the test statistic X2 . Only calculate this contribution here, and show your work. You may use R to verify your answer.
+
+
+$X^2=\sum_{j=1}^{J} \frac{(Y_j-E(Y-j))^2}{E(Y_j)}$ 
+
+Thus the portion of the sum contributed by "Yellow, Normal" would be:
+
+$\frac{(118-112.5)^2}{112.5}=0.2689$
+
+```{r}
+(((118-112.5)^2)/112.5 )%>% round(4)
+```
+
+
+
+
+(e) Use R to find the test statistic and p-value for this hypothesis test.
+
+
+```{r}
+yn <- 9/16
+ys <- 3/16 
+bn <- 3/16
+bs <- 1/16
+modelp <- c(yn,ys,bn,bs)
+flies.summary <- plyr::count(flies, var="Traits")
+flies.goodtest <- chisq.test(flies.summary[2], p=modelp)
+cat("Test statistic", flies.goodtest$statistic %>% round(4))
+cat("p-value", flies.goodtest$p.value %>% round(4))
+```
+
+
+
+
+(f) Write a conclusion about the correctness of the genetic theory.
+
+**Based on the sampled data, there is strong evidence to suggest that at least one of our types is inconsistent with the probabilities determined by the genetic theory. **
 
