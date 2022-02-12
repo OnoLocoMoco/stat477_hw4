@@ -23,7 +23,7 @@ library(kableExtra)
 library(knitr)
 library(epiDisplay)
 
-## FOLLOWING CODE PROVIDED BY P. CARRAGEA, IOWA STATE UNIV.
+## FOLLOWING CODE PROVIDED BY P. CARAGEA, IOWA STATE UNIV.
 ##Enter the function prop.ci used to calculate the 
 ##confidence interval for a population proportion using either 
 ##the Wilson score method or normal approximation method
@@ -62,10 +62,42 @@ library(epiDisplay)
   }
 
 #############################################################################################################
-## END P CARRAGEA CODE
 
-
-
+  coverage.ci<- function(n, p, type, conf.level){
+  sample<- rbinom(100000, n, p)
+  
+  phat<- sample/n
+  alpha<- 1 - conf.level
+  z<- qnorm(1 - alpha/2)
+  newy<- sample + z^2/2
+  newn<- n + z^2
+  newphat<- newy/newn
+  
+  lowerci<- rep(0, 100000)
+  upperci<- rep(0, 100000)
+  nocov<- rep(0, 100000)
+  
+  for (i in 1:100000){
+    if (type=="normal") {
+      lowerci[i]<- phat[i] - z*sqrt(phat[i]*(1-phat[i])/n)
+      upperci[i]<- phat[i] + z*sqrt(phat[i]*(1-phat[i])/n)
+    }
+    else if (type=="score") {
+      lowerci[i]<- (phat[i] + (1/(2*n))*z^2 - z*sqrt(phat[i]*(1-phat[i])/n + z^2/(4*n^2)))/(1 + (1/n)*z^2)
+      upperci[i]<- (phat[i] + (1/(2*n))*z^2 + z*sqrt(phat[i]*(1-phat[i])/n + z^2/(4*n^2)))/(1 + (1/n)*z^2)
+    }
+    else {
+      lowerci[i]<- newphat[i] - z*sqrt(newphat[i]*(1-newphat[i])/newn)
+      upperci[i]<- newphat[i] + z*sqrt(newphat[i]*(1-newphat[i])/newn)
+    }
+    nocov[i]<- ifelse(lowerci[i] > p, 1, 0) + ifelse(upperci[i] < p, 1, 0)
+  }
+  covrate<- 1 - sum(nocov)/100000
+  #cat(covrate*100, "\n")
+  covrate*100
+}
+  
+## END P CARAGEA CODE
 ```
 
 1. According to a Gallup poll, of 1,000 randomly selected adults aged 18 or older in the United States, 65% believe that global warming is more a result of human actions than natural causes.
@@ -79,12 +111,12 @@ df <- data.frame(warming)
 tab1(df$warming, graph=FALSE, cum.percent = FALSE)
 
 df %>% ggplot(aes(x=warming))+
-    geom_bar(fill = "steelblue", colour = "black")+
-    ylim(0, 800)+
+    geom_bar(fill = "steelblue", colour = "black") +
+    ylim(0, 800) +
     labs(x = "Belief",
          y = "Number of People",
-         title = "Belief that global Warming is caused by people")+
-    theme_bw()+
+         title = "Belief that global Warming is caused by people") +
+    theme_bw() +
     theme(axis.title.y = element_text(size = rel(1.2)),
           axis.title.x = element_text(size = rel(1.2)),
           axis.text.x = element_text(size = rel(1.4)),
@@ -96,7 +128,7 @@ df %>% ggplot(aes(x=warming))+
 
 |      (b) Describe the population proportion of interest p in words.
 
-**In this example, the population proportion (p) is the faction of the entire US population that believes global warming is caused more by people than natural causes. 
+**In this example, the population proportion (p) is the faction of the entire US population that believes global warming is caused more by people than natural causes. **
 
 
 
@@ -111,7 +143,7 @@ prop.ci(650,1000,type="normal", 0.95)
 
 |      (d) Give the interpretation of the 95% confidence interval you calculated in part (c) in the context of the problem. 
 
-We are 95% confident that the true population proportion of people in the USE who believe global warming is caused more by people than nature is between 62.04% to approximately 67.95%.
+**We are 95% confident that the true population proportion of people in the USE who believe global warming is caused more by people than nature is between 62.04% to approximately 67.95%.**
 
 
 
@@ -129,7 +161,7 @@ prop.ci(650,1000,type="score", 0.95)
 
 ```
 
-The results of the score method have a slightly smaller range than the results of the normal approxmation method. I would call the centers for each calculation approximately equal at .65. 
+**The results of the score method have a slightly smaller range than the results of the normal approxmation method. I would call the centers for each calculation approximately equal at .65. **
 
 
 
@@ -141,6 +173,50 @@ cat("Sample size needed:",nprop.ci(.65,0.025,0.95))
 
 ```
 
-To calculate the sample size, we solve for $n\geq (\frac{z_{1-\frac{\alpha}{2}}}{M})^2 \hat{\hat{p}}*(1-\hat{\hat{p}})$. Because this is a follow up survey, the reasearches might use their prior findings to estimate $\hat{\hat{p}}=.65$. 
+**To calculate the sample size, we solve for $n\geq (\frac{z_{1-\frac{\alpha}{2}}}{M})^2 \hat{\hat{p}}*(1-\hat{\hat{p}})$. Because this is a follow up survey, the reasearches might use their prior findings to estimate $\hat{\hat{p}}=.65$. **
+
+2. Unlike confidence intervals for other parameters... What do you notice about the coverage rates of the two methods? How do these results
+depend on the values of n and p?
+
+
+\begin{table}[h!]
+\begin{tabular}{|l||lll||lll|}
+\hline
+                            &      & Normal &   & & Wilson's &  \\ \hline
+\multicolumn{1}{|c||}{$p$} & n=25 & n=250 & n=1000 & n=25 & n=250 & n=1000 \\ \hline
+0.5      & 95.651 & 95.145 & 94.656  & 95.766 & 95.008 & 94.729 \\
+0.75     & 89.468 & 93.999 & 94.66 & 93.901 & 94.365 & 94.758 \\
+0.9      & 91.851 & 93.104 & 95.17 & 96.33 & 95.54 & 94.893 \\ \hline
+\end{tabular}
+\end{table}
+
+**When we compare the coverages calcuated above it appears that for most of our simulations the Wilson's score method results in coverage closer to the 95% goal more sore than the Normal approximation method. I have a hard time determining a pattern of relation between n and p for both methods. There is a lot of variation in coverage (betwen 89% and 95%) for the normal method for all the combinations of n and p. While the Wilson's score method seems to stay consistently close to our ideal coverage of 95% no matter what the combinations of n and p are changed to. **
+
+```{r q2, echo=TRUE}
+# coverage.ci(25,.5,"normal",0.95)
+# coverage.ci(250,.5,"normal",0.95)
+# coverage.ci(1000,.5,"normal",0.95)
+# 
+# coverage.ci(25,.5,"score",0.95)
+# coverage.ci(250,.5,"score",0.95)
+# coverage.ci(1000,.5,"score",0.95)
+# 
+# 
+# coverage.ci(25,.75,"normal",0.95)
+# coverage.ci(250,.75,"normal",0.95)
+# coverage.ci(1000,.75,"normal",0.95)
+# 
+# coverage.ci(25,.75,"score",0.95)
+# coverage.ci(250,.75,"score",0.95)
+# coverage.ci(1000,.75,"score",0.95)
+# 
+# coverage.ci(25,.9,"normal",0.95)
+# coverage.ci(250,.9,"normal",0.95)
+# coverage.ci(1000,.9,"normal",0.95)
+# 
+# coverage.ci(25,.9,"score",0.95)
+# coverage.ci(250,.9,"score",0.95)
+# coverage.ci(1000,.9,"score",0.95)
+```
 
 
